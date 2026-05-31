@@ -1,5 +1,6 @@
 package banking;
 
+
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.math.*;
@@ -7,6 +8,10 @@ import java.sql.*;
 import java.util.HashSet;
 import java.util.Random;
 import org.mindrot.jbcrypt.BCrypt;
+import java.util.ArrayList;
+import java.util.List;
+
+import static banking.ConsoleColors.*;
 
 public class BankService {
 
@@ -16,12 +21,7 @@ public class BankService {
         this.dao = new BankDAO();
     }
 
-    public static final String RESET = "\u001B[0m";
-    public static final String RED = "\u001B[31m";
-    public static final String GREEN = "\u001B[32m";
-    public static final String YELLOW = "\u001B[33m";
-    public static final String BLUE = "\u001B[34m";
-    public static final String CYAN = "\u001B[36m";
+
 
 
     public  int createAccount(String username, String password, String actype) {
@@ -29,11 +29,11 @@ public class BankService {
             System.out.println(RED + "ALL FIELDS ARE REQUIRED!" + RESET);
             return -1;
         }
-        if(!actype.equalsIgnoreCase("Savings") || !actype.equalsIgnoreCase("Current")) {
+        if(!actype.equalsIgnoreCase("Savings") && !actype.equalsIgnoreCase("Current")) {
             System.out.println(RED + "INVALID ACCOUNT TYPE" + RESET);
             return -1;
         }
-        if(username.length()<3 && password.length()>20){
+        if(username.length() < 3 || username.length() > 20){
             System.out.println(RED + "USERNAME MUST BE 3-20 CHARACTERS" + RESET);
             return -1;
         }
@@ -102,7 +102,7 @@ public class BankService {
 
     }
 
-    public  boolean transfer(int senderAc, int receiverAc, int amount) {
+    public  boolean transfer(int senderAc, int receiverAc, int amount) throws AccountNotFoundException, InsufficientBalanceException, SQLException{
 
         if (receiverAc == 0 || amount == 0) {
             System.out.println(RED + "ALL FIELDS ARE REQUIRED!" + RESET);
@@ -114,11 +114,16 @@ public class BankService {
         }
         try {
             Account sender = dao.findByAccountNumber(senderAc);
+            if (sender == null ) {
+                throw new AccountNotFoundException(senderAc);
+            }
             Account receiver = dao.findByAccountNumber(receiverAc);
-            if (sender == null || receiver == null) return false;
 
+            if (receiver == null ) {
+                throw new AccountNotFoundException(receiverAc);
+            }
             if (!checkLimit(sender, amount)) {
-                return false;
+                throw new InsufficientBalanceException(sender.getBalance(), amount);
             }
             dao.setAutoCommit(false);
             dao.updateBalance(senderAc, sender.getBalance().subtract(BigDecimal.valueOf(amount)));
@@ -208,4 +213,14 @@ public class BankService {
             return null;
         }
     }
+
+    public List<String[]> getRecentTransactions(int acno,int limit){
+        try{
+            return dao.getRecentTransactions(acno,limit);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return new ArrayList<>();
+        }
+    }
+
 }

@@ -15,6 +15,8 @@ public class Account {
         this.actype=actype;
     }
 
+
+
     public int getAcno() {
         return acno;
     }

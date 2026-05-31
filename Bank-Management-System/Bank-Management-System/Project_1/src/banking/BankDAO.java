@@ -2,6 +2,9 @@ package banking;
 
 import java.math.BigDecimal;
 import java.sql.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public class BankDAO {
     private final Connection conn;
@@ -118,4 +121,26 @@ public class BankDAO {
         }
     }
 
+    public List<String[]> getRecentTransactions(int acno,int limit)throws SQLException {
+        String sql = "SELECT type,amount,sender_ac,receiver_ac,timestamp FROM transactions WHERE sender_ac = ? or receiver_ac = ? ORDER BY timestamp DESC LIMIT ?";
+
+        List<String[]> result = new ArrayList<>();
+        try (PreparedStatement pst = conn.prepareStatement(sql)) {
+            pst.setInt(1, acno);
+            pst.setInt(2, acno);
+            pst.setInt(3, limit);
+            ResultSet rs = pst.executeQuery();
+            while (rs.next()) {
+                result.add((new String[]{
+                        rs.getString("type"),
+                        rs.getString("amount"),
+                        String.valueOf(rs.getInt("sender_ac")),
+                        String.valueOf(rs.getInt("receiver_ac")),
+                        rs.getString("timestamp")
+                }));
+
+            }
+        }
+        return result;
+    }
 }
